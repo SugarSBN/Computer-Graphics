@@ -39,7 +39,7 @@ getSurfaces input = [(getIndex (filted !! i !! 1), getIndex (filted !! i !! 2), 
         getIndex s = read $ head (splitOn "/" s)
 
 genVertices :: [Surface] -> [Point] -> [Float]
-genVertices surfaces points = concat $ map (getSur points) surfaces
+genVertices surfaces points = concatMap (getSur points) surfaces
     where
         getSur :: [Point] -> Surface -> [Float]
         getSur ps s = [sel1 (ps !! (sel1 s - 1)), sel2 (ps !! (sel1 s - 1)), sel3 (ps !! (sel1 s - 1))] ++

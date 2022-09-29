@@ -12,12 +12,14 @@ import           Data.Fixed
 import           Foreign.C
 import           Control.Monad
 import           Linear
-import           ReadParse
 
 import Callback
 import Shader
+import Camera
 import ReadParse
 import Graphics.Rendering.OpenGL (shaderCompiler)
+import Graphics.GL.Compatibility32 
+import Data.IORef (readIORef, newIORef)
 
 main :: IO ()
 main = do
@@ -26,7 +28,7 @@ main = do
   windowHint (WindowHint'ContextVersionMinor 3)
   windowHint (WindowHint'OpenGLProfile OpenGLProfile'Core)
   windowHint (WindowHint'OpenGLForwardCompat True)
-  maybeWindow <- createWindow 600 600 "Learn OpenGL" Nothing Nothing
+  maybeWindow <- createWindow 800 800 "Learn OpenGL" Nothing Nothing
   case maybeWindow of
     Nothing -> do
       putStrLn "Failed to create GLFW window"
@@ -36,6 +38,12 @@ main = do
       makeContextCurrent (Just window)
       setFramebufferSizeCallback window (Just frameBufferSizeCallback)
       shaderProgram <- makeShaderProgram
+      glEnable GL_BLEND
+
+      pos <- newIORef (V3 0.0 0.0 3.0)
+      front <- newIORef (V3 0.0 0.0 (-1.0))
+      up <- newIORef (V3 0.0 1.0 0.0)
+
       initBuffers $ \vaoPtr vboPtr ->
         forever $ do
           shouldClose <- windowShouldClose window
@@ -45,8 +53,8 @@ main = do
               terminate
               exitSuccess
             else do
-              process window
-              render shaderProgram vaoPtr window
+              process window (Camera pos front up)
+              render shaderProgram (Camera pos front up) vaoPtr window
               swapBuffers window
               pollEvents
 
@@ -76,40 +84,62 @@ initBuffers f = do
 
 
 
+poses :: [[Float]]
+poses = [
+    [0.0, 0.0, 0.0],
+    [2.0, 5.0, -15.0],
+    [-1.5, -2.2, -2.5],
+    [-3.8, -2.0, -12.3],
+    [2.4, -0.4, -3.5],
+    [-1.7, 3.0, -7.5],
+    [1.3, -2.0, -2.5],
+    [1.5, 2.0, -2.5],
+    [1.5, 0.2, -1.5],
+    [-1.3, 1.0, -1.5]]
+
 verts' :: IO (Vector Float)
 verts' = do
     vertices <- readVertices "test.obj"
     print (length vertices)
     return $ V.fromList vertices
 
-
-model :: IO (M44 Float)
-model = do
+model :: [Float] -> IO (M44 Float)
+model pos = do
     tims <- getTime 
     let theta = case tims of
                   Nothing -> 0
                   Just s  -> mod' s (2 * pi)
-    return $ mkTransformation (axisAngle (V3 1.0 0.0 0.0) (realToFrac theta)) (V3 0.0 0.0 0.0)
+    return $ mkTransformation (axisAngle (V3 0.5 1.0 0.0) (realToFrac theta)) (V3 (head pos) (pos !! 1) (pos !! 2))
 
-view :: M44 Float
-view = mkTransformation (axisAngle (V3 0.0 0.0 0.0) 0.0) (V3 0.0 0.0 (-3.0))
+view :: Camera -> IO (M44 Float)
+view c = do
+    pos <- readIORef (cameraPos c)
+    front <- readIORef (cameraFront c)
+    up <- readIORef (cameraUp c)
+    return $ lookAt pos (pos + front) up
 
 projection :: M44 Float
 projection = perspective 45.0 1.0 0.1 100.0
 
-render :: GLuint -> Ptr GLuint -> Window -> IO ()
-render shaderProgram vaoPtr window = do
+render :: GLuint -> Camera -> Ptr GLuint -> Window -> IO ()
+render shaderProgram c vaoPtr window = do
   vao <- peek vaoPtr
   glClearColor 0.2 0.3 0.3 1.0
-  glClear GL_COLOR_BUFFER_BIT
+  --glClearDepth 1
+  --glDepthMask GL_TRUE
+  --glEnable GL_DEPTH_TEST
+  glClear (GL_COLOR_BUFFER_BIT .|. GL_DEPTH_BUFFER_BIT)
+  
   glUseProgram shaderProgram
-  model' <- model
-  setMatrix shaderProgram "model" model'
-  setMatrix shaderProgram "view" view
-  setMatrix shaderProgram "projection" projection
-  glBindVertexArray vao
-  let sts = [i * 3 | i <- [0 .. 2081]]
-  mapM_ (\x -> glDrawArrays GL_LINE_LOOP x 3) sts
+  model' <- mapM model poses
+  mapM_ (\md -> do
+    setMatrix shaderProgram "model" md
+    view' <- view c
+    setMatrix shaderProgram "view" view'
+    setMatrix shaderProgram "projection" projection
+    glBindVertexArray vao
+    let sts = [i * 3 | i <- [0 .. 11]]
+    mapM_ (\x -> glDrawArrays GL_LINE_LOOP x 3) sts) model'
   
 
 setMatrix :: GLuint -> String -> M44 Float -> IO ()
