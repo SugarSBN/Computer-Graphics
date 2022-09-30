@@ -20,6 +20,7 @@ import ReadParse
 import Graphics.Rendering.OpenGL (shaderCompiler)
 import Graphics.GL.Compatibility32 
 import Data.IORef (readIORef, newIORef)
+import Graphics.UI.GLFW (setCursorPosCallback)
 
 main :: IO ()
 main = do
@@ -39,11 +40,19 @@ main = do
       setFramebufferSizeCallback window (Just frameBufferSizeCallback)
       shaderProgram <- makeShaderProgram
       glEnable GL_BLEND
-
+      setCursorInputMode window CursorInputMode'Disabled 
+       
       pos <- newIORef (V3 0.0 0.0 3.0)
       front <- newIORef (V3 0.0 0.0 (-1.0))
       up <- newIORef (V3 0.0 1.0 0.0)
+    
+      yaw <- newIORef (-90.0)
+      pitch <- newIORef 0.0
 
+      lastX <- newIORef 400.0
+      lastY <- newIORef 400.0
+
+      setCursorPosCallback window (Just (cursorPosCallback (lastX, lastY) (yaw, pitch) (Camera pos front up)))
       initBuffers $ \vaoPtr vboPtr ->
         forever $ do
           shouldClose <- windowShouldClose window
