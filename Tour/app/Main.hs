@@ -17,10 +17,10 @@ import Callback
 import Shader
 import Camera
 import ReadParse
+import Model
 import Graphics.Rendering.OpenGL (shaderCompiler)
 import Graphics.GL.Compatibility32 
 import Data.IORef (readIORef, newIORef)
-import Graphics.UI.GLFW (setCursorPosCallback)
 
 main :: IO ()
 main = do
@@ -51,10 +51,14 @@ main = do
 
       lastX <- newIORef 400.0
       lastY <- newIORef 400.0
+      
+      m <- readModel "cat.obj"
+      mds <- newIORef [m]
 
+      --glEnable GL_DEPTH_TEST
       setCursorPosCallback window (Just (cursorPosCallback (lastX, lastY) (yaw, pitch) (Camera pos front up)))
-      initBuffers $ \vaoPtr vboPtr ->
-        forever $ do
+      setMouseButtonCallback window (Just (mouseCallback m (Camera pos front up)))
+      forever $ do
           shouldClose <- windowShouldClose window
           if shouldClose
             then do
@@ -63,20 +67,24 @@ main = do
               exitSuccess
             else do
               process window (Camera pos front up)
-              render shaderProgram (Camera pos front up) vaoPtr window
+              mds' <- readIORef mds
+              m' <- foldM combineModel (head mds') (tail mds')
+              initBuffers m' $ \vaoPtr vboPtr->
+                  render m' shaderProgram (Camera pos front up) vaoPtr window
+
               swapBuffers window
               pollEvents
 
 
-initBuffers :: (VBO -> VAO -> IO ()) -> IO ()
-initBuffers f = do
+initBuffers :: Model -> (VBO -> VAO -> IO ()) -> IO ()
+initBuffers m f = do
   alloca $ \vaoPtr -> do
    alloca $ \vboPtr -> do
     glGenVertexArrays 1 vaoPtr
     glGenBuffers 1 vboPtr
     peek vaoPtr >>= glBindVertexArray
     peek vboPtr >>= glBindBuffer GL_ARRAY_BUFFER
-    verts <- verts'
+    let verts = V.fromList $ concat (vertices m)
     V.unsafeWith verts $ \vertsPtr ->
       glBufferData
         GL_ARRAY_BUFFER
@@ -91,34 +99,14 @@ initBuffers f = do
     glBindVertexArray 0
     f vaoPtr vboPtr
 
-
-
-poses :: [[Float]]
-poses = [
-    [0.0, 0.0, 0.0],
-    [2.0, 5.0, -15.0],
-    [-1.5, -2.2, -2.5],
-    [-3.8, -2.0, -12.3],
-    [2.4, -0.4, -3.5],
-    [-1.7, 3.0, -7.5],
-    [1.3, -2.0, -2.5],
-    [1.5, 2.0, -2.5],
-    [1.5, 0.2, -1.5],
-    [-1.3, 1.0, -1.5]]
-
-verts' :: IO (Vector Float)
-verts' = do
-    vertices <- readVertices "cat.obj"
-    print (length vertices)
-    return $ V.fromList vertices
-
-model :: IO (M44 Float)
-model = do
+model :: Model ->  IO (M44 Float)
+model m = do
     tims <- getTime 
     let theta = case tims of
                   Nothing -> 0
                   Just s  -> mod' s (2 * pi)
-    return $ mkTransformation (axisAngle (V3 0.0 1.0 0.0) (realToFrac theta)) (V3 0 0 0)
+    pos <- readIORef (position m)
+    return $ mkTransformation (axisAngle (V3 0.0 1.0 0.0) (realToFrac theta)) pos
 
 view :: Camera -> IO (M44 Float)
 view c = do
@@ -130,8 +118,8 @@ view c = do
 projection :: M44 Float
 projection = perspective 45.0 1.0 0.1 100.0
 
-render :: GLuint -> Camera -> Ptr GLuint -> Window -> IO ()
-render shaderProgram c vaoPtr window = do
+render :: Model -> GLuint -> Camera -> Ptr GLuint -> Window -> IO ()
+render m shaderProgram c vaoPtr window = do
   vao <- peek vaoPtr
   glClearColor 0.2 0.3 0.3 1.0
   --glClearDepth 1
@@ -140,13 +128,13 @@ render shaderProgram c vaoPtr window = do
   glClear (GL_COLOR_BUFFER_BIT .|. GL_DEPTH_BUFFER_BIT)
   
   glUseProgram shaderProgram
-  model' <- model
+  model' <- model m
   setMatrix shaderProgram "model" model'
   view' <- view c
   setMatrix shaderProgram "view" view'
   setMatrix shaderProgram "projection" projection
   glBindVertexArray vao
-  let sts = [i * 3 | i <- [0 .. 2100]]
+  let sts = [i * 3 | i <- [0 .. (nsurfaces m - 1)]]
   mapM_ (\x -> glDrawArrays GL_LINE_LOOP x 3) sts
 
   

@@ -3,8 +3,10 @@ module Callback where
 import Graphics.UI.GLFW
 import Graphics.GL
 import Camera
+import Data.Fixed
 import Data.IORef (modifyIORef, IORef, writeIORef, readIORef)
-import Linear (V3(V3))
+import Model
+import Linear
 
 process :: Window -> Camera -> IO ()
 process window c = do
@@ -53,4 +55,12 @@ cursorPosCallback (lastX, lastY) (yaw, pitch) c window x y = do
     let y = y' / 180.0 * pi
     let p = p' / 180.0 * pi
     writeIORef (cameraFront c) (V3 (cos y * cos p) (sin p) (sin y * cos p))
+
+mouseCallback :: Model -> Camera -> Window -> MouseButton -> MouseButtonState -> ModifierKeys -> IO ()
+mouseCallback m c window MouseButton'1 MouseButtonState'Pressed _ = do
+    pos <- readIORef (cameraPos c)
+    front <- readIORef (cameraFront c)
+    print pos
+    print front
+mouseCallback _ _ _ _ _ _= return ()
 

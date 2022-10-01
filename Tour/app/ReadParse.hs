@@ -23,12 +23,10 @@ type Point = (Float, Float, Float)
 type Surface = (Int, Int, Int)
 
 getPoints :: [String] -> [Point]
-getPoints input = [resize (read (filted !! i !! 1), read (filted !! i !! 2), read (filted !! i !! 3)) | i <- [0 .. (n - 1)]]
+getPoints input = [(read (filted !! i !! 1), read (filted !! i !! 2), read (filted !! i !! 3)) | i <- [0 .. (n - 1)]]
     where
         filted = filter (\s -> not (null s) && head s == "v") (map words input)
         n = length filted
-        resize :: Point -> Point
-        resize (a, b, c) = (a / 500, b / 500, c / 500)
 
 getSurfaces :: [String] -> [Surface]
 getSurfaces input = [(getIndex (filted !! i !! 1), getIndex (filted !! i !! 2), getIndex (filted !! i !! 3)) | i <- [0 .. (n - 1)]] 
@@ -38,8 +36,8 @@ getSurfaces input = [(getIndex (filted !! i !! 1), getIndex (filted !! i !! 2), 
         getIndex :: String -> Int
         getIndex s = read $ head (splitOn "/" s)
 
-genVertices :: [Surface] -> [Point] -> [Float]
-genVertices surfaces points = concatMap (getSur points) surfaces
+genVertices :: [Surface] -> [Point] -> [[Float]]
+genVertices surfaces points = map (getSur points) surfaces
     where
         getSur :: [Point] -> Surface -> [Float]
         getSur ps s = [sel1 (ps !! (sel1 s - 1)), sel2 (ps !! (sel1 s - 1)), sel3 (ps !! (sel1 s - 1))] ++
@@ -47,7 +45,7 @@ genVertices surfaces points = concatMap (getSur points) surfaces
                       [sel1 (ps !! (sel3 s - 1)), sel2 (ps !! (sel3 s - 1)), sel3 (ps !! (sel3 s - 1))]
 
 
-readVertices :: FilePath -> IO [Float]
+readVertices :: FilePath -> IO [[Float]]
 readVertices filename = do
     lines <- readFileLines filename
     let points = getPoints lines
