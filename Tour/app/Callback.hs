@@ -56,11 +56,19 @@ cursorPosCallback (lastX, lastY) (yaw, pitch) c window x y = do
     let p = p' / 180.0 * pi
     writeIORef (cameraFront c) (V3 (cos y * cos p) (sin p) (sin y * cos p))
 
-mouseCallback :: Model -> Camera -> Window -> MouseButton -> MouseButtonState -> ModifierKeys -> IO ()
-mouseCallback m c window MouseButton'1 MouseButtonState'Pressed _ = do
+mouseCallback :: Model -> Camera -> IORef [Model] -> Window -> MouseButton -> MouseButtonState -> ModifierKeys -> IO ()
+mouseCallback m c mds window MouseButton'1 MouseButtonState'Pressed _ = do
     pos <- readIORef (cameraPos c)
     front <- readIORef (cameraFront c)
-    print pos
-    print front
-mouseCallback _ _ _ _ _ _= return ()
+    mds' <- readIORef mds
+    modifyIORef mds (++ [translateModel (last mds') (V3 0.5 0.5 0.5)])
+    return ()
+
+mouseCallback m c mds window MouseButton'2 MouseButtonState'Pressed _ = do
+    pos <- readIORef (cameraPos c)
+    front <- readIORef (cameraFront c)
+    mds' <- readIORef mds
+    modifyIORef mds (take 1)
+    return ()
+mouseCallback _ _ _ _ _ _ _ = return ()
 

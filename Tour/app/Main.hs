@@ -57,7 +57,7 @@ main = do
 
       --glEnable GL_DEPTH_TEST
       setCursorPosCallback window (Just (cursorPosCallback (lastX, lastY) (yaw, pitch) (Camera pos front up)))
-      setMouseButtonCallback window (Just (mouseCallback m (Camera pos front up)))
+      setMouseButtonCallback window (Just (mouseCallback m (Camera pos front up) mds))
       forever $ do
           shouldClose <- windowShouldClose window
           if shouldClose
@@ -105,8 +105,7 @@ model m = do
     let theta = case tims of
                   Nothing -> 0
                   Just s  -> mod' s (2 * pi)
-    pos <- readIORef (position m)
-    return $ mkTransformation (axisAngle (V3 0.0 1.0 0.0) (realToFrac theta)) pos
+    return $ mkTransformation (axisAngle (V3 0.0 1.0 0.0) 0) (position m)
 
 view :: Camera -> IO (M44 Float)
 view c = do
