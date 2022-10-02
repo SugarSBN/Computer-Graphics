@@ -33,4 +33,24 @@ combineModel m1 m2 = do
                          (s !! 3) + deltaX, (s !! 4) + deltaY, (s !! 5) + deltaZ,
                          (s !! 6) + deltaX, (s !! 7) + deltaY, (s !! 8) + deltaZ]) v2
     return $ Model (v1 ++ v2') (nsurfaces m1 + nsurfaces m2) (position m1)
-    
+   
+
+interTriangleLine :: V3 GLfloat -> V3 GLfloat -> V3 GLfloat -> V3 GLfloat -> V3 GLfloat -> Bool
+interTriangleLine a b c o d = abs det >= 1e-6 && t >= 0.0 && u >= 0.0 && v >= 0.0 && (u + v) <= 1.0
+    where
+        e1 = b - a
+        e2 = c - a
+        n = cross e1 e2
+        det = - (dot d n)
+        invdet = 1.0 / det
+        ao = o - a
+        dao = cross ao d
+        u = dot e2 dao * invdet
+        v = -dot e1 dao * invdet
+        t = dot ao n * invdet
+
+interModelLine :: Model -> V3 GLfloat -> V3 GLfloat -> Bool
+interModelLine m o d = any inter (vertices m)
+    where
+        inter :: [GLfloat] -> Bool
+        inter s = interTriangleLine (V3 (head s) (s !! 1) (s !! 2)) (V3 (s !! 3) (s !! 4) (s !! 5)) (V3 (s !! 6) (s !! 7) (s !! 8)) o d

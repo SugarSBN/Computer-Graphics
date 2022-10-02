@@ -45,6 +45,7 @@ main = do
       pos <- newIORef (V3 0.0 0.0 3.0)
       front <- newIORef (V3 0.0 0.0 (-1.0))
       up <- newIORef (V3 0.0 1.0 0.0)
+      aspect <- newIORef 45.0
     
       yaw <- newIORef (-90.0)
       pitch <- newIORef 0.0
@@ -53,11 +54,12 @@ main = do
       lastY <- newIORef 400.0
       
       m <- readModel "cat.obj"
-      mds <- newIORef [m]
+      mds <- newIORef [Model [[-10.0, 0, 0, 10, 0, 0, -10, 0, 0], [0, -10, 0, 0, 10, 0, 0, -10, 0], [0, 0, -10, 0, 0, 10, 0, 0, -10], [-1, 0, -1, -1, 0, 1, -1, 0, -1], [-1, 0, 1, 1, 0, 1, -1, 0, 1], [1, 0, 1, 1, 0, -1, 1, 0, -1], [1, 0, -1, -1, 0, -1, 1, 0, -1]] 7 (V3 0 0 0), m]
 
       --glEnable GL_DEPTH_TEST
-      setCursorPosCallback window (Just (cursorPosCallback (lastX, lastY) (yaw, pitch) (Camera pos front up)))
-      setMouseButtonCallback window (Just (mouseCallback m (Camera pos front up) mds))
+      setCursorPosCallback window (Just (cursorPosCallback (lastX, lastY) (yaw, pitch) (Camera pos front up aspect)))
+      setMouseButtonCallback window (Just (mouseCallback m (Camera pos front up aspect) mds))
+      setScrollCallback window (Just (scrollCallback (Camera pos front up aspect)))
       forever $ do
           shouldClose <- windowShouldClose window
           if shouldClose
@@ -66,11 +68,11 @@ main = do
               terminate
               exitSuccess
             else do
-              process window (Camera pos front up)
+              process window (Camera pos front up aspect)
               mds' <- readIORef mds
               m' <- foldM combineModel (head mds') (tail mds')
               initBuffers m' $ \vaoPtr vboPtr->
-                  render m' shaderProgram (Camera pos front up) vaoPtr window
+                  render m' shaderProgram (Camera pos front up aspect) vaoPtr window
 
               swapBuffers window
               pollEvents
@@ -114,8 +116,10 @@ view c = do
     up <- readIORef (cameraUp c)
     return $ lookAt pos (pos + front) up
 
-projection :: M44 Float
-projection = perspective 45.0 1.0 0.1 100.0
+projection :: Camera -> IO (M44 Float)
+projection c = do
+    aspect <- readIORef (cameraAspect c)
+    return $ perspective (realToFrac aspect / 180.0 * pi) 1.0 0.1 100.0
 
 render :: Model -> GLuint -> Camera -> Ptr GLuint -> Window -> IO ()
 render m shaderProgram c vaoPtr window = do
@@ -131,7 +135,8 @@ render m shaderProgram c vaoPtr window = do
   setMatrix shaderProgram "model" model'
   view' <- view c
   setMatrix shaderProgram "view" view'
-  setMatrix shaderProgram "projection" projection
+  projection' <- projection c
+  setMatrix shaderProgram "projection" projection'
   glBindVertexArray vao
   let sts = [i * 3 | i <- [0 .. (nsurfaces m - 1)]]
   mapM_ (\x -> glDrawArrays GL_LINE_LOOP x 3) sts

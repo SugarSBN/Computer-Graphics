@@ -7,7 +7,8 @@ import Graphics.GL
 data Camera = Camera {
     cameraPos :: IORef (V3 Float),
     cameraFront :: IORef (V3 Float),
-    cameraUp  :: IORef (V3 Float)
+    cameraUp  :: IORef (V3 Float),
+    cameraAspect :: IORef Double
 }
 
 data CameraDirection = Forward | Backward | Leftward | Rightward

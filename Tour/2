@@ -1,0 +1,50 @@
+module Model where
+
+import ReadParse
+import Graphics.GL
+import Data.IORef
+import Linear
+
+data Model = Model {
+    vertices :: [[GLfloat]],
+    nsurfaces :: GLint,
+    position :: V3 GLfloat
+}
+
+readModel :: FilePath -> IO Model
+readModel filename = do
+    verts <- readVertices filename
+    let mx = maximum (map abs (concat verts))
+    return $ Model (map (map (/ mx)) verts) (fromIntegral (length verts)) (V3 0.0 0.0 0.0)
+
+translateModel :: Model -> V3 GLfloat -> Model
+translateModel m v = Model (vertices m) (nsurfaces m) (position m + v)
+
+combineModel :: Model -> Model ->IO  Model
+combineModel m1 m2 = do
+    let v1 = vertices m1
+    let v2 = vertices m2
+    let (V3 p1x p1y p1z) = position m1
+    let (V3 p2x p2y p2z) = position m2
+    let deltaX = p2x - p1x
+    let deltaY = p2y - p1y
+    let deltaZ = p2z - p1z
+    let v2' = map (\s -> [head s + deltaX, (s !! 1) + deltaY, (s !! 2) + deltaZ, 
+                         (s !! 3) + deltaX, (s !! 4) + deltaY, (s !! 5) + deltaZ,
+                         (s !! 6) + deltaX, (s !! 7) + deltaY, (s !! 8) + deltaZ]) v2
+    return $ Model (v1 ++ v2') (nsurfaces m1 + nsurfaces m2) (position m1)
+   
+
+screenCoordinat :: Model -> M44 GLfloat -> M44 GLfloat -> M44 GLflort ->  [[GLfloat]]
+screenCoordinat m model view projection = map f (vertices m)
+                                    where
+                                        f :: [GLfloat] -> [GLfloat]
+                                        f vs = [x1, y1, z1, x2, y2, z2, x3, y3, z3]
+                                            where
+                                                v1 = V3 (head vs) (vs !! 1) (vs !! 2)
+                                                v2 = V3 (vs !! 3) (vs !! 4) (vs !! 5)
+                                                v3 = V3 (vs !! 6) (vs !! 7) (vs !! 8)
+                                                (V3 x1 y1 z1) = normalizePoint $ (projection * view * model) *^ (point v1)
+                                                (V3 x2 y2 z2) = normalizePoint $ (projection * view * model) *^ (point v2)
+                                                (V3 x3 y3 z3) = normalizePoint $ (projection * view * model) *^ (point v3)
+

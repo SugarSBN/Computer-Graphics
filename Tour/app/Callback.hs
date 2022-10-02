@@ -61,14 +61,17 @@ mouseCallback m c mds window MouseButton'1 MouseButtonState'Pressed _ = do
     pos <- readIORef (cameraPos c)
     front <- readIORef (cameraFront c)
     mds' <- readIORef mds
-    modifyIORef mds (++ [translateModel (last mds') (V3 0.5 0.5 0.5)])
+    print $ interModelLine (mds' !! 1) pos front
     return ()
 
 mouseCallback m c mds window MouseButton'2 MouseButtonState'Pressed _ = do
-    pos <- readIORef (cameraPos c)
-    front <- readIORef (cameraFront c)
     mds' <- readIORef mds
-    modifyIORef mds (take 1)
+    modifyIORef mds (take 2)
     return ()
 mouseCallback _ _ _ _ _ _ _ = return ()
 
+scrollCallback :: Camera -> Window -> Double -> Double -> IO ()
+scrollCallback c window _ yoffset = do
+    aspect <- readIORef (cameraAspect c)
+    let aspect' = aspect - yoffset
+    writeIORef (cameraAspect c) (max (min aspect' 45.0) 1.0)
