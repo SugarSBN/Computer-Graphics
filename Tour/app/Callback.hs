@@ -61,6 +61,7 @@ mouseCallback m c mds window MouseButton'1 MouseButtonState'Pressed _ = do
     pos <- readIORef (cameraPos c)
     front <- readIORef (cameraFront c)
     mds' <- readIORef mds
+
     print $ interModelLine (mds' !! 1) pos front
     return ()
 

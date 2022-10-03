@@ -18,7 +18,7 @@ import Shader
 import Camera
 import ReadParse
 import Model
-import Graphics.Rendering.OpenGL (shaderCompiler)
+import Graphics.Rendering.OpenGL (shaderCompiler, shaderBinary)
 import Graphics.GL.Compatibility32 
 import Data.IORef (readIORef, newIORef)
 
@@ -138,6 +138,7 @@ render m shaderProgram c vaoPtr window = do
   projection' <- projection c
   setMatrix shaderProgram "projection" projection'
   glBindVertexArray vao
+  setVector4 shaderProgram "outColor" (V4 1.0 1.0 1.0 1.0)
   let sts = [i * 3 | i <- [0 .. (nsurfaces m - 1)]]
   mapM_ (\x -> glDrawArrays GL_LINE_LOOP x 3) sts
 
@@ -148,6 +149,12 @@ setMatrix id' name val = do
     withCString name $ \cstr -> do
         location <- glGetUniformLocation id' cstr
         withPtr val (glUniformMatrix4fv location 1 GL_TRUE)
+
+setVector4 :: GLuint -> String -> V4 Float -> IO ()
+setVector4 id' name (V4 a b c d) = do
+    withCString name $ \cstr -> do
+        location <- glGetUniformLocation id' cstr
+        glUniform4f location a b c d
 
 withPtr :: (Storable a, Floating a, Foldable f, Foldable g) => f (g a) -> (Ptr a -> IO ()) -> IO ()
 withPtr = V.unsafeWith . V.fromList . concatMap F.toList
