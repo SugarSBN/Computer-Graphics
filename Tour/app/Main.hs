@@ -18,7 +18,7 @@ import Shader
 import Camera
 import ReadParse
 import Model
-import Graphics.Rendering.OpenGL (shaderCompiler, shaderBinary)
+import Graphics.Rendering.OpenGL (shaderCompiler, shaderBinary, shaderPrecisionFormat)
 import Graphics.GL.Compatibility32 
 import Data.IORef (readIORef, newIORef)
 
@@ -54,7 +54,13 @@ main = do
       lastY <- newIORef 400.0
       
       m <- readModel "cat.obj"
-      mds <- newIORef [Model [[-10.0, 0, 0, 10, 0, 0, -10, 0, 0], [0, -10, 0, 0, 10, 0, 0, -10, 0], [0, 0, -10, 0, 0, 10, 0, 0, -10], [-1, 0, -1, -1, 0, 1, -1, 0, -1], [-1, 0, 1, 1, 0, 1, -1, 0, 1], [1, 0, 1, 1, 0, -1, 1, 0, -1], [1, 0, -1, -1, 0, -1, 1, 0, -1]] 7 (V3 0 0 0), m]
+      mds <- newIORef [Model [[-10.0, 0, 0, 10, 0, 0, -10, 0, 0], 
+                              [0, -10, 0, 0, 10, 0, 0, -10, 0], 
+                              [0, 0, -10, 0, 0, 10, 0, 0, -10], 
+                              [-1, 0, -1, -1, 0, 1, -1, 0, -1], 
+                              [-1, 0, 1, 1, 0, 1, -1, 0, 1], 
+                              [1, 0, 1, 1, 0, -1, 1, 0, -1], 
+                              [1, 0, -1, -1, 0, -1, 1, 0, -1]] 7 (V3 0 0 0) [[0, 3, 6, 9, 12, 15, 18]] [V4 0.0 1.0 1.0 1.0], m]
 
       --glEnable GL_DEPTH_TEST
       setCursorPosCallback window (Just (cursorPosCallback (lastX, lastY) (yaw, pitch) (Camera pos front up aspect)))
@@ -70,6 +76,7 @@ main = do
             else do
               process window (Camera pos front up aspect)
               mds' <- readIORef mds
+              
               m' <- foldM combineModel (head mds') (tail mds')
               initBuffers m' $ \vaoPtr vboPtr->
                   render m' shaderProgram (Camera pos front up aspect) vaoPtr window
@@ -138,9 +145,11 @@ render m shaderProgram c vaoPtr window = do
   projection' <- projection c
   setMatrix shaderProgram "projection" projection'
   glBindVertexArray vao
-  setVector4 shaderProgram "outColor" (V4 1.0 1.0 1.0 1.0)
-  let sts = [i * 3 | i <- [0 .. (nsurfaces m - 1)]]
-  mapM_ (\x -> glDrawArrays GL_LINE_LOOP x 3) sts
+  let n = length (verticeIndex m)
+  mapM_ (\ind -> do
+                    setVector4 shaderProgram "outColor" (modelColor m !! ind)
+                    mapM_ (\x -> glDrawArrays GL_LINE_LOOP x 3) (verticeIndex m !! ind)
+        ) [0 .. (n - 1)]
 
   
 

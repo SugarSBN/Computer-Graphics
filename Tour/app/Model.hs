@@ -8,17 +8,19 @@ import Linear
 data Model = Model {
     vertices :: [[GLfloat]],
     nsurfaces :: GLint,
-    position :: V3 GLfloat
+    position :: V3 GLfloat,
+    verticeIndex :: [[GLint]],
+    modelColor :: [V4 GLfloat]
 }
 
 readModel :: FilePath -> IO Model
 readModel filename = do
     verts <- readVertices filename
     let mx = maximum (map abs (concat verts))
-    return $ Model (map (map (/ mx)) verts) (fromIntegral (length verts)) (V3 0.0 0.0 0.0)
+    return $ Model (map (map (/ mx)) verts) (fromIntegral (length verts)) (V3 0.0 0.0 0.0) [[fromIntegral (i * 3) | i <- [0 .. (length verts - 1)]]] [V4 1.0 1.0 1.0 1.0]
 
 translateModel :: Model -> V3 GLfloat -> Model
-translateModel m v = Model (vertices m) (nsurfaces m) (position m + v)
+translateModel m v = Model (vertices m) (nsurfaces m) (position m + v) (verticeIndex m) (modelColor m)
 
 combineModel :: Model -> Model ->IO  Model
 combineModel m1 m2 = do
@@ -32,7 +34,9 @@ combineModel m1 m2 = do
     let v2' = map (\s -> [head s + deltaX, (s !! 1) + deltaY, (s !! 2) + deltaZ, 
                          (s !! 3) + deltaX, (s !! 4) + deltaY, (s !! 5) + deltaZ,
                          (s !! 6) + deltaX, (s !! 7) + deltaY, (s !! 8) + deltaZ]) v2
-    return $ Model (v1 ++ v2') (nsurfaces m1 + nsurfaces m2) (position m1)
+    let verticeIndex2 = verticeIndex m2
+    let verticeIndex2' = map (map (+(3 * nsurfaces m1))) verticeIndex2
+    return $ Model (v1 ++ v2') (nsurfaces m1 + nsurfaces m2) (position m1) (verticeIndex m1 ++ verticeIndex2') (modelColor m1 ++ modelColor m2)
    
 
 interTriangleLine :: V3 GLfloat -> V3 GLfloat -> V3 GLfloat -> V3 GLfloat -> V3 GLfloat -> Bool
