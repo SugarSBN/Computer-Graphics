@@ -10,14 +10,15 @@ data Model = Model {
     nsurfaces :: GLint,
     position :: V3 GLfloat,
     verticeIndex :: [[GLint]],
-    modelColor :: [V4 GLfloat]
+    modelColor :: [IORef (V4 GLfloat)]
 }
 
 readModel :: FilePath -> IO Model
 readModel filename = do
     verts <- readVertices filename
     let mx = maximum (map abs (concat verts))
-    return $ Model (map (map (/ mx)) verts) (fromIntegral (length verts)) (V3 0.0 0.0 0.0) [[fromIntegral (i * 3) | i <- [0 .. (length verts - 1)]]] [V4 1.0 1.0 1.0 1.0]
+    col <- newIORef (V4 1.0 1.0 1.0 1.0)
+    return $ Model (map (map (/ mx)) verts) (fromIntegral (length verts)) (V3 0.0 0.0 0.0) [[fromIntegral (i * 3) | i <- [0 .. (length verts - 1)]]] [col]
 
 translateModel :: Model -> V3 GLfloat -> Model
 translateModel m v = Model (vertices m) (nsurfaces m) (position m + v) (verticeIndex m) (modelColor m)

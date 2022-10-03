@@ -54,17 +54,18 @@ main = do
       lastY <- newIORef 400.0
       
       m <- readModel "cat.obj"
+      col <- newIORef (V4 1.0 1.0 1.0 1.0)
       mds <- newIORef [Model [[-10.0, 0, 0, 10, 0, 0, -10, 0, 0], 
                               [0, -10, 0, 0, 10, 0, 0, -10, 0], 
                               [0, 0, -10, 0, 0, 10, 0, 0, -10], 
                               [-1, 0, -1, -1, 0, 1, -1, 0, -1], 
                               [-1, 0, 1, 1, 0, 1, -1, 0, 1], 
                               [1, 0, 1, 1, 0, -1, 1, 0, -1], 
-                              [1, 0, -1, -1, 0, -1, 1, 0, -1]] 7 (V3 0 0 0) [[0, 3, 6, 9, 12, 15, 18]] [V4 0.0 1.0 1.0 1.0], m]
+                              [1, 0, -1, -1, 0, -1, 1, 0, -1]] 7 (V3 0 0 0) [[0, 3, 6, 9, 12, 15, 18]] [col], m]
 
       --glEnable GL_DEPTH_TEST
       setCursorPosCallback window (Just (cursorPosCallback (lastX, lastY) (yaw, pitch) (Camera pos front up aspect)))
-      setMouseButtonCallback window (Just (mouseCallback m (Camera pos front up aspect) mds))
+      setMouseButtonCallback window (Just (mouseCallback (Camera pos front up aspect) mds))
       setScrollCallback window (Just (scrollCallback (Camera pos front up aspect)))
       forever $ do
           shouldClose <- windowShouldClose window
@@ -147,7 +148,8 @@ render m shaderProgram c vaoPtr window = do
   glBindVertexArray vao
   let n = length (verticeIndex m)
   mapM_ (\ind -> do
-                    setVector4 shaderProgram "outColor" (modelColor m !! ind)
+                    col <- readIORef (modelColor m !! ind)
+                    setVector4 shaderProgram "outColor" col
                     mapM_ (\x -> glDrawArrays GL_LINE_LOOP x 3) (verticeIndex m !! ind)
         ) [0 .. (n - 1)]
 
