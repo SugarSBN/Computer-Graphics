@@ -6,6 +6,7 @@ import Camera
 import Data.Fixed
 import Data.IORef (modifyIORef, IORef, writeIORef, readIORef)
 import Model
+import Control.Monad
 import Linear
 
 process :: Window -> Camera -> IO ()
@@ -77,12 +78,20 @@ mouseCallback c mds selected window MouseButton'1 MouseButtonState'Pressed _ = d
     pos <- readIORef (cameraPos c)
     front <- readIORef (cameraFront c)
     mds' <- readIORef mds
+    selected' <- readIORef selected
+    unless (null selected') 
+        $ do
+            let rua = mds' !! head selected'
+            let whe = position rua
+            m' <- translateModel rua (pos - whe + 10 *^ front) 
+            modifyIORef mds (++ [m'])
+
     let modelIndex = filter (\x -> interModelLine (mds' !! x) pos front) [0 .. (length mds' - 1)]
     writeIORef selected modelIndex
 
 mouseCallback c mds selected window MouseButton'2 MouseButtonState'Pressed _ = do
     mds' <- readIORef mds
-    writeIORef selected []
+    modifyIORef mds (take 2)
 mouseCallback _ _ _ _ _ _ _ = return ()
 
 scrollCallback :: Camera -> Window -> Double -> Double -> IO ()
@@ -90,3 +99,9 @@ scrollCallback c window _ yoffset = do
     aspect <- readIORef (cameraAspect c)
     let aspect' = aspect - yoffset
     writeIORef (cameraAspect c) (max (min aspect' 45.0) 1.0)
+
+keyCallback :: Window -> Key -> Int -> KeyState -> ModifierKeys -> IO ()
+keyCallback window Key'Space _ KeyState'Pressed _ = do
+    print "Space Pressed!"
+
+keyCallback _ _ _ _ _ = return ()

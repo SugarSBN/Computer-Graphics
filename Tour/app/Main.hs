@@ -68,6 +68,7 @@ main = do
       setCursorPosCallback window (Just (cursorPosCallback (lastX, lastY) (yaw, pitch) (Camera pos front up aspect) mds selectedModel))
       setMouseButtonCallback window (Just (mouseCallback (Camera pos front up aspect) mds selectedModel))
       setScrollCallback window (Just (scrollCallback (Camera pos front up aspect)))
+      setKeyCallback window (Just keyCallback)
       forever $ do
           shouldClose <- windowShouldClose window
           if shouldClose

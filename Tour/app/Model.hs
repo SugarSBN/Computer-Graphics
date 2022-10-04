@@ -20,8 +20,11 @@ readModel filename = do
     col <- newIORef (V4 1.0 1.0 1.0 1.0)
     return $ Model (map (map (/ mx)) verts) (fromIntegral (length verts)) (V3 0.0 0.0 0.0) [[fromIntegral (i * 3) | i <- [0 .. (length verts - 1)]]] [col]
 
-translateModel :: Model -> V3 GLfloat -> Model
-translateModel m v = Model (vertices m) (nsurfaces m) (position m + v) (verticeIndex m) (modelColor m)
+translateModel :: Model -> V3 GLfloat -> IO Model
+translateModel m v = do
+    col <- readIORef (head (modelColor m))
+    newCol <- newIORef col
+    return $ Model (vertices m) (nsurfaces m) (position m + v) (verticeIndex m) [newCol]
 
 combineModel :: Model -> Model ->IO  Model
 combineModel m1 m2 = do
@@ -57,5 +60,6 @@ interTriangleLine a b c o d = abs det >= 1e-6 && t >= 0.0 && u >= 0.0 && v >= 0.
 interModelLine :: Model -> V3 GLfloat -> V3 GLfloat -> Bool
 interModelLine m o d = any inter (vertices m)
     where
+        pos = position m
         inter :: [GLfloat] -> Bool
-        inter s = interTriangleLine (V3 (head s) (s !! 1) (s !! 2)) (V3 (s !! 3) (s !! 4) (s !! 5)) (V3 (s !! 6) (s !! 7) (s !! 8)) o d
+        inter s = interTriangleLine (pos + V3 (head s) (s !! 1) (s !! 2)) (pos + V3 (s !! 3) (s !! 4) (s !! 5)) (pos + V3 (s !! 6) (s !! 7) (s !! 8)) o d
