@@ -62,10 +62,11 @@ main = do
                               [-1, 0, 1, 1, 0, 1, -1, 0, 1], 
                               [1, 0, 1, 1, 0, -1, 1, 0, -1], 
                               [1, 0, -1, -1, 0, -1, 1, 0, -1]] 7 (V3 0 0 0) [[0, 3, 6, 9, 12, 15, 18]] [col], m]
+      selectedModel <- newIORef []
 
       --glEnable GL_DEPTH_TEST
-      setCursorPosCallback window (Just (cursorPosCallback (lastX, lastY) (yaw, pitch) (Camera pos front up aspect) mds))
-      setMouseButtonCallback window (Just (mouseCallback (Camera pos front up aspect) mds))
+      setCursorPosCallback window (Just (cursorPosCallback (lastX, lastY) (yaw, pitch) (Camera pos front up aspect) mds selectedModel))
+      setMouseButtonCallback window (Just (mouseCallback (Camera pos front up aspect) mds selectedModel))
       setScrollCallback window (Just (scrollCallback (Camera pos front up aspect)))
       forever $ do
           shouldClose <- windowShouldClose window

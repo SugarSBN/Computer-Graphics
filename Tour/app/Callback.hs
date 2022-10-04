@@ -40,8 +40,8 @@ process window c = do
 frameBufferSizeCallback :: Window -> Int -> Int -> IO ()
 frameBufferSizeCallback _ x y = glViewport 0 0 (fromIntegral x) (fromIntegral y)
   
-cursorPosCallback :: (IORef Float, IORef Float) -> (IORef Float, IORef Float) -> Camera -> IORef [Model] -> Window -> Double -> Double -> IO ()
-cursorPosCallback (lastX, lastY) (yaw, pitch) c mds window x y = do
+cursorPosCallback :: (IORef Float, IORef Float) -> (IORef Float, IORef Float) -> Camera -> IORef [Model] -> IORef [Int] -> Window -> Double -> Double -> IO ()
+cursorPosCallback (lastX, lastY) (yaw, pitch) c mds selected window x y = do
     lastX' <- readIORef lastX
     lastY' <- readIORef lastY
     let xoffset = realToFrac $ (x - realToFrac lastX') * 0.05
@@ -61,24 +61,29 @@ cursorPosCallback (lastX, lastY) (yaw, pitch) c mds window x y = do
     mds' <- readIORef mds
     let inter = filter (\x -> interModelLine (mds' !! x) pos front) [0 .. (length mds' - 1)]
     let inter' = filter (\x -> not (interModelLine (mds' !! x) pos front)) [0 .. (length mds' - 1)]
+    selected' <- readIORef selected
     mapM_ (\x -> do
                     writeIORef (head (modelColor (mds' !! x))) (V4 0.0 1.0 1.0 1.0))
         inter
     mapM_ (\x -> do
                     writeIORef (head (modelColor (mds' !! x))) (V4 1.0 1.0 1.0 1.0))
         inter'
+    mapM_ (\x -> do
+                    writeIORef (head (modelColor (mds' !! x))) (V4 1.0 0.0 0.0 1.0))
+        selected'
 
-mouseCallback :: Camera -> IORef [Model] -> Window -> MouseButton -> MouseButtonState -> ModifierKeys -> IO ()
-mouseCallback c mds window MouseButton'1 MouseButtonState'Pressed _ = do
+mouseCallback :: Camera -> IORef [Model] -> IORef [Int] -> Window -> MouseButton -> MouseButtonState -> ModifierKeys -> IO ()
+mouseCallback c mds selected window MouseButton'1 MouseButtonState'Pressed _ = do
     pos <- readIORef (cameraPos c)
     front <- readIORef (cameraFront c)
-    return ()
-
-mouseCallback c mds window MouseButton'2 MouseButtonState'Pressed _ = do
     mds' <- readIORef mds
-    modifyIORef mds (take 2)
-    return ()
-mouseCallback _ _ _ _ _ _ = return ()
+    let modelIndex = filter (\x -> interModelLine (mds' !! x) pos front) [0 .. (length mds' - 1)]
+    writeIORef selected modelIndex
+
+mouseCallback c mds selected window MouseButton'2 MouseButtonState'Pressed _ = do
+    mds' <- readIORef mds
+    writeIORef selected []
+mouseCallback _ _ _ _ _ _ _ = return ()
 
 scrollCallback :: Camera -> Window -> Double -> Double -> IO ()
 scrollCallback c window _ yoffset = do
