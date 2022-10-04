@@ -83,7 +83,7 @@ mouseCallback c mds selected window MouseButton'1 MouseButtonState'Pressed _ = d
         $ do
             let rua = mds' !! head selected'
             let whe = position rua
-            m' <- translateModel rua (pos - whe + 10 *^ front) 
+            m' <- translateModel rua (pos - whe + 5 *^ front) 
             modifyIORef mds (++ [m'])
 
     let modelIndex = filter (\x -> interModelLine (mds' !! x) pos front) [0 .. (length mds' - 1)]
@@ -91,7 +91,7 @@ mouseCallback c mds selected window MouseButton'1 MouseButtonState'Pressed _ = d
 
 mouseCallback c mds selected window MouseButton'2 MouseButtonState'Pressed _ = do
     mds' <- readIORef mds
-    modifyIORef mds (take 2)
+    modifyIORef mds (take (length mds' - 1))
 mouseCallback _ _ _ _ _ _ _ = return ()
 
 scrollCallback :: Camera -> Window -> Double -> Double -> IO ()
@@ -101,7 +101,5 @@ scrollCallback c window _ yoffset = do
     writeIORef (cameraAspect c) (max (min aspect' 45.0) 1.0)
 
 keyCallback :: Window -> Key -> Int -> KeyState -> ModifierKeys -> IO ()
-keyCallback window Key'Space _ KeyState'Pressed _ = do
-    print "Space Pressed!"
 
 keyCallback _ _ _ _ _ = return ()
