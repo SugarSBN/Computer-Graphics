@@ -14,8 +14,10 @@ data MousePosition = MousePosition {
     positionY :: Double
 }
 
-process :: Window -> IORef Camera -> IO ()
-process window c = do
+process :: IORef [Model] ->
+           IORef [Int] ->
+           Window -> IORef Camera -> IO ()
+process mds' selected' window c = do
     keyState <- getKey window Key'Escape
     case keyState of
         KeyState'Pressed -> setWindowShouldClose window True
@@ -40,8 +42,57 @@ process window c = do
     case keyState of
         KeyState'Pressed -> modifyIORef c (\x -> moveCamera x 0.05 Rightward)
         _ -> pure ()
+    
+    mds <- readIORef mds'
+    selected <- readIORef selected'
 
+    keyState <- getKey window Key'Left 
+    case keyState of
+        KeyState'Pressed -> 
+            if null selected 
+               then pure ()
+               else do
+                let id = head selected
+                modifyIORef mds' (\l ->
+                    modifyList l id (\m ->
+                        rotateModel m (V3 0.0 1.0 0.0) 0.05))
+        _ -> pure ()
+    
+    keyState <- getKey window Key'Right 
+    case keyState of
+        KeyState'Pressed ->
+            if null selected
+               then pure ()
+               else do
+                let id = head selected
+                modifyIORef mds' (\l ->
+                    modifyList l id (\m ->
+                        rotateModel m (V3 0.0 1.0 0.0) (-0.05)))
+        _ -> pure ()
 
+    keyState <- getKey window Key'Up
+    case keyState of
+        KeyState'Pressed ->
+            if null selected
+               then pure ()
+               else do
+                let id = head selected
+                modifyIORef mds' (\l ->
+                    modifyList l id (\m ->
+                        rotateModel m (V3 1.0 0.0 0.0) 0.05))
+        _ -> pure ()
+
+    keyState <- getKey window Key'Down 
+    case keyState of
+       KeyState'Pressed ->
+           if null selected
+              then pure ()
+              else do
+               let id = head selected
+               modifyIORef mds' (\l ->
+                   modifyList l id (\m ->
+                       rotateModel m (V3 1.0 0.0 0.0) (-0.05)))
+       _ -> pure ()
 
 frameBufferSizeCallback :: Window -> Int -> Int -> IO ()
 frameBufferSizeCallback _ x y = glViewport 0 0 (fromIntegral x) (fromIntegral y)

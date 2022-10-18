@@ -103,4 +103,20 @@ packModels = foldl1 combineModels
                                   (s !! 3) + deltaX, (s !! 4) + deltaY, (s !! 5) + deltaZ,
                                   (s !! 6) + deltaX, (s !! 7) + deltaY, (s !! 8) + deltaZ]) v2
                 
-
+rotateModel :: Model -> V3 GLfloat -> GLfloat -> Model
+rotateModel m v theta = Model
+                            (map f (vertices m))
+                            (nsurfaces m)
+                            (position m)
+                            (modelColor m)
+    where
+        mk = mkTransformation (axisAngle v theta) (V3 0.0 0.0 0.0)
+        f :: [GLfloat] -> [GLfloat]
+        f s = [ax, ay, az, bx, by, bz, cx, cy, cz]
+            where
+                v1 = point $ V3 (head s) (s !! 1) (s !! 2)
+                v2 = point $ V3 (s !! 3) (s !! 4) (s !! 5)
+                v3 = point $ V3 (s !! 6) (s !! 7) (s !! 8)
+                (V3 ax ay az) = normalizePoint $ mk !* v1
+                (V3 bx by bz) = normalizePoint $ mk !* v2
+                (V3 cx cy cz) = normalizePoint $ mk !* v3

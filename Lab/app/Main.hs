@@ -82,7 +82,7 @@ main = do
               terminate
               exitSuccess
             else do
-              process window camera'
+              process allModels' selectedModel' window camera'
               mds <- readIORef allModels'
               
               let m = packModels mds
