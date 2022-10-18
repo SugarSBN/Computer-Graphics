@@ -18,7 +18,7 @@ import Shader
 import Camera
 import ReadParse
 import Model
-import Graphics.Rendering.OpenGL (shaderCompiler, shaderBinary, shaderPrecisionFormat)
+import Graphics.Rendering.OpenGL (shaderCompiler, shaderBinary, shaderPrecisionFormat, shadeModel)
 import Graphics.GL.Compatibility32 
 import Data.IORef (readIORef, newIORef)
 
@@ -61,7 +61,7 @@ main = do
                               [1, 0, 1, 1, 0, -1, 1, 0, -1], 
                               [1, 0, -1, -1, 0, -1, 1, 0, -1]] 
                               7 
-                              (RenderStuff (V3 0.0 0.0 0.0) 0.0 0.0)
+                              (V3 0.0 0.0 0.0)
                               (V4 1.0 1.0 1.0 1.0)
       
       allModels' <- newIORef [mCat, mCoordinate]
@@ -118,7 +118,7 @@ initBuffers m f = do
     f vaoPtr vboPtr
 
 model :: Model -> M44 Float
-model m = mkTransformation (axisAngle (V3 0.0 1.0 0.0) 0) (position (renderStuff m))
+model m = mkTransformation (axisAngle (V3 0.0 1.0 0.0) 0.0) (position m)
 
 view :: Camera -> M44 Float
 view c = lookAt pos (pos + front) up

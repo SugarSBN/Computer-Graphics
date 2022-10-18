@@ -5,16 +5,11 @@ import Graphics.GL
 import Data.IORef
 import Linear
 
-data RenderStuff = RenderStuff {
-    position :: V3 GLfloat,
-    phi      :: GLfloat,
-    theta    :: GLfloat
-}
 
 data Model = Model {
     vertices    :: [[GLfloat]],
     nsurfaces   :: GLint,
-    renderStuff :: RenderStuff,
+    position    :: V3 GLfloat,
     modelColor  :: V4 GLfloat
 }
 
@@ -25,16 +20,16 @@ readModel filename = do
     return $ Model 
                 (map (map (/ mx)) verts) 
                 (fromIntegral (length verts)) 
-                (RenderStuff (V3 0.0 0.0 0.0) 0.0 0.0)
+                (V3 0.0 0.0 0.0)
                 (V4 1.0 1.0 1.0 1.0)
 
 translateModel :: Model -> V3 GLfloat -> Model
-translateModel m@(Model vertices nsurfaces renderStuff modelColor) v =
+translateModel m v =
     Model 
-        vertices 
-        nsurfaces
-        (RenderStuff (position renderStuff + v) (phi renderStuff) (theta renderStuff))
-        modelColor
+        (vertices m) 
+        (nsurfaces m)
+        (position m + v)
+        (modelColor m)
 
 interTriangleLine :: V3 GLfloat -> V3 GLfloat -> V3 GLfloat -> V3 GLfloat -> V3 GLfloat -> Bool
 interTriangleLine a b c o d = abs det >= 1e-6 && t >= 0.0 && u >= 0.0 && v >= 0.0 && (u + v) <= 1.0
@@ -53,7 +48,7 @@ interTriangleLine a b c o d = abs det >= 1e-6 && t >= 0.0 && u >= 0.0 && v >= 0.
 interModelLine :: Model -> V3 GLfloat -> V3 GLfloat -> Bool
 interModelLine m o d = any inter (vertices m)
     where
-        pos = position (renderStuff m)
+        pos = position m
         inter :: [GLfloat] -> Bool
         inter s = interTriangleLine 
                     (pos + V3 (head s) (s !! 1) (s !! 2)) 
@@ -65,7 +60,7 @@ modifyColor :: Model -> (V4 GLfloat -> V4 GLfloat) -> Model
 modifyColor m f = Model
                     (vertices m)
                     (nsurfaces m)
-                    (renderStuff m)
+                    (position m)
                     (f (modelColor m))
 
 modifyList :: [a] -> Int -> (a -> a) -> [a]
@@ -94,13 +89,13 @@ packModels = foldl1 combineModels
         combineModels m1 m2 = Model
                                 (v1 ++ v2')
                                 (nsurfaces m1 + nsurfaces m2)
-                                (renderStuff m1)
+                                (position m1)
                                 (modelColor m1)
             where
                 v1 = vertices m1
                 v2 = vertices m2
-                (V3 p1x p1y p1z) = position (renderStuff m1)
-                (V3 p2x p2y p2z) = position (renderStuff m2)
+                (V3 p1x p1y p1z) = position m1
+                (V3 p2x p2y p2z) = position m2
                 deltaX = p2x - p1x
                 deltaY = p2y - p1y
                 deltaZ = p2z - p1z

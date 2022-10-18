@@ -109,7 +109,7 @@ mouseCallback c' mds' selected' window MouseButton'1 MouseButtonState'Pressed _ 
     unless (null selected) 
         $ do
             let rua = mds !! head selected
-            let whe = position (renderStuff rua)
+            let whe = position rua
             let m' = translateModel rua (pos - whe + 5 *^ front) 
             modifyIORef mds' (++ [m'])
 
@@ -117,8 +117,13 @@ mouseCallback c' mds' selected' window MouseButton'1 MouseButtonState'Pressed _ 
     writeIORef selected' modelIndex
 
 mouseCallback c' mds' selected' window MouseButton'2 MouseButtonState'Pressed _ = do
-    mds <- readIORef mds'
-    modifyIORef mds' (take (length mds - 1))
+    selected <- readIORef selected'
+    if not (null selected) 
+       then do
+            writeIORef selected' []
+       else do
+            mds <- readIORef mds'
+            modifyIORef mds' (take (length mds - 1))
 mouseCallback _ _ _ _ _ _ _ = return ()
 
 scrollCallback :: IORef Camera -> 
