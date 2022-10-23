@@ -166,6 +166,12 @@ mouseCallback c' mds' selected' window MouseButton'1 MouseButtonState'Pressed _ 
 
     let modelIndex = filter (\x -> interModelLine (mds !! x) pos front) [0 .. (length mds - 1)]
     writeIORef selected' modelIndex
+    
+    selected <- readIORef selected'
+    if not (null selected) then do
+        modifyIORef mds' (\l ->
+            modifyList l (head selected) (\m -> modifyColor m (const (V4 1.0 0.0 0.0 1.0))))
+        else pure ()
 
 mouseCallback c' mds' selected' window MouseButton'2 MouseButtonState'Pressed _ = do
     selected <- readIORef selected'
@@ -177,13 +183,23 @@ mouseCallback c' mds' selected' window MouseButton'2 MouseButtonState'Pressed _ 
             modifyIORef mds' (take (length mds - 1))
 mouseCallback _ _ _ _ _ _ _ = return ()
 
-scrollCallback :: IORef Camera -> 
+scrollCallback :: IORef [Model] ->
+                  IORef Camera -> 
+                  IORef [Int] ->
                   Window -> Double -> Double -> IO ()
-scrollCallback c' window _ yoffset = do
+scrollCallback mds' c' selected' window _ yoffset = do
     c <- readIORef c'
-    let aspect = cameraAspect c
-    let aspect' = aspect - yoffset
-    modifyIORef c' (\c -> modifyAspect c (const (max (min aspect' 45.0) 1.0)))
+    selected <- readIORef selected'
+    mds <- readIORef mds'
+    if null selected 
+        then do
+            let aspect = cameraAspect c
+            let aspect' = aspect - yoffset
+            modifyIORef c' (\c -> modifyAspect c (const (max (min aspect' 45.0) 1.0)))
+        else do
+            let id = head selected
+            modifyIORef mds' (\l ->
+                modifyList l id (enlargeModel (0.1 * realToFrac yoffset)))
 
 keyCallback :: Window -> Key -> Int -> KeyState -> ModifierKeys -> IO ()
 

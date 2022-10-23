@@ -63,16 +63,19 @@ main = do
                               7 
                               (V3 0.0 0.0 0.0)
                               (V4 1.0 1.0 1.0 1.0)
+                              0
+                              0
       
-      allModels' <- newIORef [mCat, mCoordinate]
+      allModels' <- newIORef [mCoordinate, mCat]
       selectedModel' <- newIORef []
+     
 
       mouseLastPosition' <- newIORef (MousePosition 400.0 400.0)
 
       --glEnable GL_DEPTH_TEST
       setCursorPosCallback window (Just (cursorPosCallback mouseLastPosition' camera' allModels' selectedModel'))
       setMouseButtonCallback window (Just (mouseCallback camera' allModels' selectedModel'))
-      setScrollCallback window (Just (scrollCallback camera'))
+      setScrollCallback window (Just (scrollCallback allModels' camera' selectedModel'))
       setKeyCallback window (Just keyCallback)
       forever $ do
           shouldClose <- windowShouldClose window
