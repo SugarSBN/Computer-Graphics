@@ -1,18 +1,22 @@
 module Bezier where
 
 import Model
+import Linear
+import Graphics.GL
 
-beizier :: [Model] -> [Model]
-beizier mds = if n >= 600 then mds else beizier mds'
+bezier :: [Model] -> [Model]
+bezier mds = head mds : [Model
+                            (vertices (mds !! 1))
+                            (nsurfaces (mds !! 1))
+                            (interp (i / 600)) 
+                            (modelColor (mds !! 1))
+                            (theta (head mds))
+                            (phi (head mds))
+                          | i <- [0 .. 600]]
     where
-        n = length mds - 1
-        mds' = (take 2 mds) ++ [
-                                Model
-                                    (vertices (mds !! i))
-                                    (nsurfaces (mds !! i))
-                                    ((position (mds !! i)) + (position (mds !! (i - 1))) / 2)
-                                    (modelColor (mds !! i))
-                                    (theta (mds !! i))
-                                    (phi (mds !! i))
-                                | i <- [2 .. n]
-                               ] ++ [mds !! n]
+        p1 = position (mds !! 1)
+        p2 = position (mds !! 2)
+        p3 = position (mds !! 3)
+        p4 = position (mds !! 4)
+        interp :: Float -> V3 GLfloat
+        interp t = (1 - t)^3 *^ p1 + (3 * (1 - t)^2 * t) *^ p2 + (3 * (1 - t) * t^2) *^ p3 + t^3 *^ p4

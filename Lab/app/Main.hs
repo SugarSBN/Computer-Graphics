@@ -14,6 +14,7 @@ import           Control.Monad
 import           Linear
 
 import Callback
+import Bezier
 import Shader
 import Camera
 import ReadParse
@@ -68,7 +69,8 @@ main = do
       
       allModels' <- newIORef [mCoordinate, mCat]
       selectedModel' <- newIORef []
-     
+      anime' <- newIORef False 
+      beziers' <- newIORef [mCoordinate, mCat]
 
       mouseLastPosition' <- newIORef (MousePosition 400.0 400.0)
 
@@ -85,13 +87,23 @@ main = do
               terminate
               exitSuccess
             else do
-              process allModels' selectedModel' window camera'
+              process anime' allModels' selectedModel' beziers' window camera'
               mds <- readIORef allModels'
-              
-              let m = packModels mds
+              anime <- readIORef anime'
+              beziers <- readIORef beziers'
+
+              ad <- if anime 
+                        then do
+                          time <- getTime 
+                          let id = case time of
+                                     Nothing -> 1
+                                     Just t  -> (round (t * 100) `mod` (length beziers - 1)) + 1
+                          return [beziers !! id]
+                        else return []
+              let m = packModels (mds ++ ad)
               camera <- readIORef camera'
               initBuffers m $ \vaoPtr vboPtr->
-                  render mds shaderProgram camera vaoPtr window
+                  render (mds ++ ad) shaderProgram camera vaoPtr window
 
               swapBuffers window
               pollEvents

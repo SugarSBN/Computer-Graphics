@@ -6,6 +6,7 @@ import Camera
 import Data.Fixed
 import Data.IORef (modifyIORef, IORef, writeIORef, readIORef)
 import Model
+import Bezier
 import Control.Monad
 import Linear
 
@@ -14,10 +15,12 @@ data MousePosition = MousePosition {
     positionY :: Double
 }
 
-process :: IORef [Model] ->
+process :: IORef Bool ->
+           IORef [Model] ->
            IORef [Int] ->
+           IORef [Model] -> 
            Window -> IORef Camera -> IO ()
-process mds' selected' window c = do
+process anime' mds' selected' beziers' window c = do
     keyState <- getKey window Key'Escape
     case keyState of
         KeyState'Pressed -> setWindowShouldClose window True
@@ -93,6 +96,16 @@ process mds' selected' window c = do
                    modifyList l id (\m ->
                        rotateModel m (V3 1.0 0.0 0.0) (-0.05)))
        _ -> pure ()
+
+    keyState <- getKey window Key'Space 
+    case keyState of
+      KeyState'Pressed -> do
+              anime <- readIORef anime'
+              if not anime
+                 then writeIORef beziers' (bezier mds)
+                 else writeIORef beziers' mds
+              writeIORef anime' (not anime)
+      _ -> pure () 
 
 frameBufferSizeCallback :: Window -> Int -> Int -> IO ()
 frameBufferSizeCallback _ x y = glViewport 0 0 (fromIntegral x) (fromIntegral y)
