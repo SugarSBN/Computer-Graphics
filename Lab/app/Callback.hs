@@ -15,12 +15,13 @@ data MousePosition = MousePosition {
     positionY :: Double
 }
 
-process :: IORef Bool ->
+process :: IORef Float ->
+           IORef Bool ->
            IORef [Model] ->
            IORef [Int] ->
            IORef [Model] -> 
            Window -> IORef Camera -> IO ()
-process anime' mds' selected' beziers' window c = do
+process totTime' anime' mds' selected' beziers' window c = do
     keyState <- getKey window Key'Escape
     case keyState of
         KeyState'Pressed -> setWindowShouldClose window True
@@ -102,10 +103,34 @@ process anime' mds' selected' beziers' window c = do
       KeyState'Pressed -> do
               anime <- readIORef anime'
               if not anime
-                 then writeIORef beziers' (bezier mds)
+                 then do
+                     totTime <- readIORef totTime'                     
+                     writeIORef beziers' (bezier totTime mds)
                  else writeIORef beziers' mds
               writeIORef anime' (not anime)
       _ -> pure () 
+
+    keyState <- getKey window Key'Q 
+    case keyState of
+      KeyState'Pressed -> do
+            anime <- readIORef anime'
+            if anime then do
+                modifyIORef totTime' (\s -> s - 10.0)
+                totTime <- readIORef totTime'
+                writeIORef beziers' (bezier totTime mds)
+            else pure ()
+      _ -> pure ()
+
+    keyState <- getKey window Key'E
+    case keyState of
+      KeyState'Pressed -> do
+            anime <- readIORef anime'
+            if anime then do
+                modifyIORef totTime' (\s -> s + 10.0)
+                totTime <- readIORef totTime'
+                writeIORef beziers' (bezier totTime mds)
+            else pure ()
+      _ -> pure ()
 
 frameBufferSizeCallback :: Window -> Int -> Int -> IO ()
 frameBufferSizeCallback _ x y = glViewport 0 0 (fromIntegral x) (fromIntegral y)

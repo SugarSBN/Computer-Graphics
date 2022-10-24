@@ -71,6 +71,7 @@ main = do
       selectedModel' <- newIORef []
       anime' <- newIORef False 
       beziers' <- newIORef [mCoordinate, mCat]
+      totTime' <- newIORef 600.0
 
       mouseLastPosition' <- newIORef (MousePosition 400.0 400.0)
 
@@ -87,7 +88,7 @@ main = do
               terminate
               exitSuccess
             else do
-              process anime' allModels' selectedModel' beziers' window camera'
+              process totTime' anime' allModels' selectedModel' beziers' window camera'
               mds <- readIORef allModels'
               anime <- readIORef anime'
               beziers <- readIORef beziers'
