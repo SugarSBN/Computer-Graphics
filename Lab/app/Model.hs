@@ -11,8 +11,8 @@ data Model = Model {
     nsurfaces   :: GLint,
     position    :: V3 GLfloat,
     modelColor  :: V4 GLfloat,
-    theta       :: GLfloat,
-    phi         :: GLfloat
+    quaternion  :: Quaternion GLfloat,
+    scale       :: GLfloat
 }
 
 readModel :: FilePath -> IO Model
@@ -24,8 +24,8 @@ readModel filename = do
                 (fromIntegral (length verts)) 
                 (V3 0.0 0.0 0.0)
                 (V4 1.0 1.0 1.0 1.0)
-                0
-                0
+                (axisAngle (V3 1 0 0) 0)
+                1
 
 translateModel :: Model -> V3 GLfloat -> Model
 translateModel m v =
@@ -34,18 +34,18 @@ translateModel m v =
         (nsurfaces m)
         (position m + v)
         (modelColor m)
-        (theta m)
-        (phi m)
+        (quaternion m)
+        (scale m)
 
-enlargeModel :: Float ->  Model -> Model
+enlargeModel ::GLfloat ->  Model -> Model
 enlargeModel b m =
   Model
     (map f verts)
     (nsurfaces m)
     (position m)
     (modelColor m)
-    (theta m)
-    (phi m)
+    (quaternion m)
+    b
     where
         verts = vertices m
         f :: [GLfloat] -> [GLfloat]
@@ -60,8 +60,8 @@ rotateModel m v@(V3 a b c) theta' = Model
                                         (nsurfaces m)
                                         (position m)
                                         (modelColor m)
-                                        (if b == 1.0 then theta m + theta' else theta m)
-                                        (if a == 1.0 then phi m + theta' else phi m)
+                                        (axisAngle v theta' * quaternion m) 
+                                        (scale m)
     where
         mk = mkTransformation (axisAngle v theta') (V3 0.0 0.0 0.0)
         f :: [GLfloat] -> [GLfloat]
@@ -105,8 +105,8 @@ modifyColor m f = Model
                     (nsurfaces m)
                     (position m)
                     (f (modelColor m))
-                    (theta m)
-                    (phi m)
+                    (quaternion m)
+                    (scale m)
 
 modifyList :: [a] -> Int -> (a -> a) -> [a]
 modifyList l n f = 
@@ -136,8 +136,8 @@ packModels = foldl1 combineModels
                                 (nsurfaces m1 + nsurfaces m2)
                                 (position m1)
                                 (modelColor m1)
-                                0
-                                0
+                                (axisAngle (V3 1 0 0) 0)
+                                1
             where
                 v1 = vertices m1
                 v2 = vertices m2

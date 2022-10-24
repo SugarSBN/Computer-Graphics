@@ -64,9 +64,9 @@ main = do
                               7 
                               (V3 0.0 0.0 0.0)
                               (V4 1.0 1.0 1.0 1.0)
-                              0
-                              0
-      
+                              (axisAngle (V3 1 0 0) 0)
+                              1
+
       allModels' <- newIORef [mCoordinate, mCat]
       selectedModel' <- newIORef []
       anime' <- newIORef False 

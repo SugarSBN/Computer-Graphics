@@ -5,13 +5,7 @@ import Linear
 import Graphics.GL
 
 bezier :: [Model] -> [Model]
-bezier mds = head mds : [Model
-                            (vertices (mds !! 1))
-                            (nsurfaces (mds !! 1))
-                            (interp (i / 600)) 
-                            (modelColor (mds !! 1))
-                            (theta (head mds))
-                            (phi (head mds))
+bezier mds = head mds : [interModel i
                           | i <- [0 .. 600]]
     where
         p1 = position (mds !! 1)
@@ -20,3 +14,16 @@ bezier mds = head mds : [Model
         p4 = position (mds !! 4)
         interp :: Float -> V3 GLfloat
         interp t = (1 - t)^3 *^ p1 + (3 * (1 - t)^2 * t) *^ p2 + (3 * (1 - t) * t^2) *^ p3 + t^3 *^ p4
+        n = length mds - 1
+        
+        interModel :: Float -> Model
+        interModel i = Model
+                            (vertices (mds !! 1))
+                            (nsurfaces (mds !! 1))
+                            (interp (i / 600))
+                            (modelColor (mds !! 1))
+                            (quaternion (mds !! 1))
+                            1
+    
+
+                         
