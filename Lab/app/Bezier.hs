@@ -5,7 +5,7 @@ import Linear
 import Graphics.GL
 
 bezier :: [Model] -> [Model]
-bezier mds = head mds : [rotateModel (interModel i) (slerp qua1 qua2 (i / 600.0))
+bezier mds = head mds : [enlargeModel (deltaB * i / 600) (rotateModel (interModel i) (slerp qua1 qua2 (i / 600.0)))
                           | i <- [0 .. 600]]
     where
         p1 = position (mds !! 1)
@@ -19,7 +19,9 @@ bezier mds = head mds : [rotateModel (interModel i) (slerp qua1 qua2 (i / 600.0)
         qua1 = axisAngle (V3 1 0 0) 0
         qua2 = quaternion (mds !! 4) * (1 / quaternion (mds !! 1))
 
-        interModel :: Float -> Model
+        deltaB = scale (mds !! 4) / scale (mds !! 1) - 1
+
+        interModel :: Float -> Model 
         interModel i = Model
                             (vertices (mds !! 1))
                             (nsurfaces (mds !! 1))

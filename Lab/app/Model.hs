@@ -37,7 +37,7 @@ translateModel m v =
         (quaternion m)
         (scale m)
 
-enlargeModel ::GLfloat ->  Model -> Model
+enlargeModel :: GLfloat ->  Model -> Model
 enlargeModel b m =
   Model
     (map f verts)
@@ -45,7 +45,7 @@ enlargeModel b m =
     (position m)
     (modelColor m)
     (quaternion m)
-    b
+    (scale m * (1 + b))
     where
         verts = vertices m
         f :: [GLfloat] -> [GLfloat]
