@@ -54,25 +54,21 @@ enlargeModel b m =
                 enl :: [GLfloat] -> [GLfloat]
                 enl s = [(1 + b) * head s, (1 + b) * (s !! 1), (1 + b) * (s !! 2)]
 
-rotateModel :: Model -> V3 GLfloat -> GLfloat -> Model
-rotateModel m v@(V3 a b c) theta' = Model
-                                        (map f (vertices m))
-                                        (nsurfaces m)
-                                        (position m)
-                                        (modelColor m)
-                                        (axisAngle v theta' * quaternion m) 
-                                        (scale m)
+rotateModel :: Model -> Quaternion GLfloat -> Model
+rotateModel m q = Model
+                    (map f (vertices m))
+                    (nsurfaces m)
+                    (position m)
+                    (modelColor m)
+                    (q * quaternion m) 
+                    (scale m)
     where
-        mk = mkTransformation (axisAngle v theta') (V3 0.0 0.0 0.0)
         f :: [GLfloat] -> [GLfloat]
         f s = [ax, ay, az, bx, by, bz, cx, cy, cz]
             where
-                v1 = point $ V3 (head s) (s !! 1) (s !! 2)
-                v2 = point $ V3 (s !! 3) (s !! 4) (s !! 5)
-                v3 = point $ V3 (s !! 6) (s !! 7) (s !! 8)
-                (V3 ax ay az) = normalizePoint $ mk !* v1
-                (V3 bx by bz) = normalizePoint $ mk !* v2
-                (V3 cx cy cz) = normalizePoint $ mk !* v3       
+                (V3 ax ay az) = rotate q $ V3 (head s) (s !! 1) (s !! 2)
+                (V3 bx by bz) = rotate q $ V3 (s !! 3) (s !! 4) (s !! 5)
+                (V3 cx cy cz) = rotate q $ V3 (s !! 6) (s !! 7) (s !! 8)
 
 interTriangleLine :: V3 GLfloat -> V3 GLfloat -> V3 GLfloat -> V3 GLfloat -> V3 GLfloat -> Bool
 interTriangleLine a b c o d = abs det >= 1e-6 && t >= 0.0 && u >= 0.0 && v >= 0.0 && (u + v) <= 1.0

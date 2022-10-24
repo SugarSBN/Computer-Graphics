@@ -58,7 +58,7 @@ process anime' mds' selected' beziers' window c = do
                 let id = head selected
                 modifyIORef mds' (\l ->
                     modifyList l id (\m ->
-                        rotateModel m (V3 0.0 1.0 0.0) 0.05))
+                        rotateModel m (axisAngle (V3 0.0 1.0 0.0) 0.05)))
         _ -> pure ()
     
     keyState <- getKey window Key'Right 
@@ -70,7 +70,7 @@ process anime' mds' selected' beziers' window c = do
                 let id = head selected
                 modifyIORef mds' (\l ->
                     modifyList l id (\m ->
-                        rotateModel m (V3 0.0 1.0 0.0) (-0.05)))
+                        rotateModel m (axisAngle (V3 0.0 1.0 0.0) (-0.05))))
         _ -> pure ()
 
     keyState <- getKey window Key'Up
@@ -82,7 +82,7 @@ process anime' mds' selected' beziers' window c = do
                 let id = head selected
                 modifyIORef mds' (\l ->
                     modifyList l id (\m ->
-                        rotateModel m (V3 1.0 0.0 0.0) 0.05))
+                        rotateModel m (axisAngle (V3 1.0 0.0 0.0) 0.05)))
         _ -> pure ()
 
     keyState <- getKey window Key'Down 
@@ -94,7 +94,7 @@ process anime' mds' selected' beziers' window c = do
                let id = head selected
                modifyIORef mds' (\l ->
                    modifyList l id (\m ->
-                       rotateModel m (V3 1.0 0.0 0.0) (-0.05)))
+                       rotateModel m (axisAngle (V3 1.0 0.0 0.0) (-0.05))))
        _ -> pure ()
 
     keyState <- getKey window Key'Space 
